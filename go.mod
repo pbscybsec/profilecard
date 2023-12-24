@@ -1,6 +1,6 @@
 module profilecard
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/golang/snappy v0.0.1 // indirect
