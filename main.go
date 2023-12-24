@@ -20,6 +20,13 @@ type User struct {
 	Status      string `bson:"status" json:"status"`
 }
 
+// SetCORS sets the necessary headers for CORS
+func SetCORS(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
@@ -36,24 +43,25 @@ func main() {
 	}
 	defer client.Disconnect(context.Background())
 
-	// Define the MongoDB collection
-	collection := client.Database("pbscybsec").Collection("users") // Adjust the database and collection names
+	collection := client.Database("pbscybsec").Collection("users")
 
-	// Define HTTP server and route
 	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		SetCORS(&w)
+		if r.Method == "OPTIONS" {
+			return
+		}
+
 		if r.Method != http.MethodGet {
 			http.Error(w, "Only GET method is allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		// Get the username from the query string
 		username := r.URL.Query().Get("username")
 		if username == "" {
 			http.Error(w, "Username is required", http.StatusBadRequest)
 			return
 		}
 
-		// Query MongoDB for the user
 		var user User
 		if err := collection.FindOne(context.Background(), bson.M{"username": username}).Decode(&user); err != nil {
 			if err == mongo.ErrNoDocuments {
@@ -64,15 +72,19 @@ func main() {
 			return
 		}
 
-		// Respond with the user data
 		json.NewEncoder(w).Encode(user)
 	})
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		SetCORS(&w)
+		if r.Method == "OPTIONS" {
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("Status Ok!"))
 	})
 
-	// Start HTTP server
 	log.Println("Starting server on :8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
