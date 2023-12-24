@@ -67,6 +67,10 @@ func main() {
 		// Respond with the user data
 		json.NewEncoder(w).Encode(user)
 	})
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Status Ok!"))
+	})
 
 	// Start HTTP server
 	log.Println("Starting server on :8080...")
